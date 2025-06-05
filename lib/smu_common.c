@@ -27,6 +27,8 @@ const char* get_code_name(const smu_processor_codename codename) {
         case CODENAME_PHOENIX: return "Phoenix";
         case CODENAME_STRIXPOINT: return "StrixPoint";
         case CODENAME_HAWKPOINT: return "HawkPoint";
+        case CODENAME_KRACKANPOINT: return "KrackanPoint";
+        case CODENAME_STRIXHALO: return "StrixHalo";
         default: return "Unknown";
     }
 }

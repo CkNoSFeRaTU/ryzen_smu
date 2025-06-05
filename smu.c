@@ -323,7 +323,12 @@ int smu_resolve_cpu_class(void) {
                 case 0x44:
                     g_smu.codename = CODENAME_GRANITERIDGE;
                     break;
-                case 0x70: // Strix Halo (AI MAX+ 395)
+                case 0x60:
+                    g_smu.codename = CODENAME_KRACKANPOINT;
+                    break;
+                case 0x70:
+                    g_smu.codename = CODENAME_STRIXHALO;
+                    break;
                 default: {
                     pr_err("CPUID: Unknown Zen5/6 processor model: 0x%X (CPUID: 0x%08X)", cpu_model, cpuid);
                     return -2;
@@ -375,7 +380,9 @@ static int detect_rsmu_address(void) {
         case CODENAME_REMBRANDT:
         case CODENAME_PHOENIX:
         case CODENAME_STRIXPOINT:
-        case CODENAME_HAWKPOINT: {
+        case CODENAME_HAWKPOINT:
+        case CODENAME_KRACKANPOINT:
+        case CODENAME_STRIXHALO: {
             g_smu.addr_rsmu_mb_cmd  = 0x3B10A20;
             g_smu.addr_rsmu_mb_rsp  = 0x3B10A80;
             g_smu.addr_rsmu_mb_args = 0x3B10A88;
@@ -425,6 +432,8 @@ static int detect_hsmp_address(void) {
         case CODENAME_PHOENIX:
         case CODENAME_STRIXPOINT:
         case CODENAME_HAWKPOINT:
+        case CODENAME_KRACKANPOINT:
+        case CODENAME_STRIXHALO:
             return 0;
         default:
             return -1;
@@ -490,7 +499,9 @@ static int detect_mp1_address(void) {
             g_smu.addr_mp1_mb_args  = 0x3B10998;
         }
             break;
-        case CODENAME_STRIXPOINT: {
+        case CODENAME_STRIXPOINT:
+        case CODENAME_KRACKANPOINT:
+        case CODENAME_STRIXHALO: {
             g_smu.mp1_if_ver       = IF_VERSION_13;
             g_smu.addr_mp1_mb_cmd   = 0x3b10928;
             g_smu.addr_mp1_mb_rsp   = 0x3b10978;
@@ -662,6 +673,8 @@ u64 smu_get_dram_base_address(const struct pci_dev* dev) {
         case CODENAME_PHOENIX:
         case CODENAME_STRIXPOINT:
         case CODENAME_HAWKPOINT:
+        case CODENAME_KRACKANPOINT:
+        case CODENAME_STRIXHALO:
             return smu_get_dram_base_address_class_1(dev, 0x66);
         case CODENAME_COLFAX:
         case CODENAME_PINNACLERIDGE:
@@ -719,7 +732,9 @@ smu_return_val smu_transfer_table_to_dram(const struct pci_dev* dev) {
         case CODENAME_REMBRANDT:
         case CODENAME_PHOENIX:
         case CODENAME_STRIXPOINT:
-        case CODENAME_HAWKPOINT: {
+        case CODENAME_HAWKPOINT:
+        case CODENAME_KRACKANPOINT:
+        case CODENAME_STRIXHALO: {
             args.s.arg0 = 3;
             fn = 0x65;
         }
@@ -817,6 +832,8 @@ smu_return_val smu_get_pm_table_version(const struct pci_dev* dev, u32* version)
         case CODENAME_PHOENIX:
         case CODENAME_STRIXPOINT:
         case CODENAME_HAWKPOINT:
+        case CODENAME_KRACKANPOINT:
+        case CODENAME_STRIXHALO:
             fn = 0x06;
             break;
         default:
@@ -917,7 +934,6 @@ u32 smu_update_pmtable_size(const u32 version) {
             break;
         case CODENAME_RAPHAEL: {
             switch (version) {
-                case 0x000400: g_smu.pm_dram_map_size = 0x948; break; // Some ES-time table? Don't exist in RM.
                 case 0x540000: g_smu.pm_dram_map_size = 0x828; break;
                 case 0x540001: g_smu.pm_dram_map_size = 0x82C; break;
                 case 0x540002: g_smu.pm_dram_map_size = 0x87C; break;
@@ -938,8 +954,12 @@ u32 smu_update_pmtable_size(const u32 version) {
             break;
         case CODENAME_GRANITERIDGE: {
             switch (version) {
-                case 0x620105: g_smu.pm_dram_map_size = 0x724; break;
-                case 0x620205: g_smu.pm_dram_map_size = 0x994; break;
+                case 0x620105:
+                case 0x621101:
+                case 0x621102: g_smu.pm_dram_map_size = 0x724; break;
+                case 0x620205:
+                case 0x621201:
+                case 0x621202: g_smu.pm_dram_map_size = 0x994; break;
                 default: return SMU_Return_Unsupported;
             }
         }
@@ -961,6 +981,7 @@ u32 smu_update_pmtable_size(const u32 version) {
         case CODENAME_STRIXPOINT: {
             switch (version) {
                 case 0x5D0008: g_smu.pm_dram_map_size = 0xD54; break;
+                case 0x5D0009: g_smu.pm_dram_map_size = 0xD58; break;
                 default: return SMU_Return_Unsupported;
             }
         }
@@ -977,6 +998,30 @@ u32 smu_update_pmtable_size(const u32 version) {
                 case 0x5C0303: g_smu.pm_dram_map_size = 0xDA8; break;
                 case 0x5C0402: g_smu.pm_dram_map_size = 0x974; break;
                 case 0x5C0403: g_smu.pm_dram_map_size = 0x980; break;
+                default: return SMU_Return_Unsupported;
+            }
+        }
+            break;
+        case CODENAME_KRACKANPOINT: {
+            switch (version) {
+                case 0x650004: g_smu.pm_dram_map_size = 0xB74; break;
+                case 0x650005: g_smu.pm_dram_map_size = 0xB78; break;
+                default: return SMU_Return_Unsupported;
+            }
+        }
+            break;
+        case CODENAME_STRIXHALO: {
+            switch (version) {
+                case 0x640107: g_smu.pm_dram_map_size = 0xDC0; break;
+                case 0x640108: g_smu.pm_dram_map_size = 0xDC4; break;
+                case 0x640109:
+                case 0x64010A: g_smu.pm_dram_map_size = 0xDD4; break;
+                case 0x64010C: g_smu.pm_dram_map_size = 0xDDC; break;
+                case 0x640207: g_smu.pm_dram_map_size = 0x100C; break;
+                case 0x640208: g_smu.pm_dram_map_size = 0x1010; break;
+                case 0x640209:
+                case 0x64020A: g_smu.pm_dram_map_size = 0x1020; break;
+                case 0x64020C: g_smu.pm_dram_map_size = 0x1028; break;
                 default: return SMU_Return_Unsupported;
             }
         }
@@ -1020,7 +1065,9 @@ smu_return_val smu_read_pm_table(const struct pci_dev* dev, unsigned char* dst, 
             g_smu.codename == CODENAME_CHAGALL ||
             g_smu.codename == CODENAME_MILAN ||
             g_smu.codename == CODENAME_HAWKPOINT ||
-            g_smu.codename == CODENAME_STORMPEAK) {
+            g_smu.codename == CODENAME_STORMPEAK ||
+            g_smu.codename == CODENAME_KRACKANPOINT ||
+            g_smu.codename == CODENAME_STRIXHALO) {
             ret = smu_get_pm_table_version(dev, &version);
 
             if (ret != SMU_Return_OK) {
