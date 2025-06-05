@@ -311,7 +311,7 @@ static int ryzen_smu_get_version(const smu_mailbox mb, const int show) {
     const u32 ver = smu_get_version(g_driver.device, mb);
 
     if (ver <= 0xFF) {
-        pr_err("Failed to query the %sSMU version: %d", mb == MAILBOX_TYPE_RSMU ? "R" : "MP1 ", ver);
+        pr_err("Failed to query the %sSMU version: %d\n", mb == MAILBOX_TYPE_RSMU ? "R" : "MP1 ", ver);
         return -EINVAL;
     }
 
@@ -323,7 +323,7 @@ static int ryzen_smu_get_version(const smu_mailbox mb, const int show) {
         else
             sprintf(g_driver.smu_version, "%d.%d.%d", (ver >> 16) & 0xff, (ver >> 8) & 0xff, ver & 0xff);
 
-        pr_info("SMU v%s", g_driver.smu_version);
+        pr_info("SMU v%s\n", g_driver.smu_version);
     }
 
     return 0;
@@ -334,7 +334,7 @@ static int ryzen_smu_probe(struct pci_dev *dev, const struct pci_device_id *id) 
 
     g_driver.device = dev;
 
-    pr_info("loading version: %s", THIS_MODULE->version);
+    pr_info("loading version: %s\n", THIS_MODULE->version);
 
     // Clamp values.
     if (smu_timeout_attempts > SMU_RETRIES_MAX)
@@ -344,13 +344,13 @@ static int ryzen_smu_probe(struct pci_dev *dev, const struct pci_device_id *id) 
 
     // Detect processor class & figure out MP1/RSMU support.
     if (smu_init() != 0) {
-        pr_err("Failed to initialize the SMU for use");
+        pr_err("Failed to initialize the SMU for use\n");
         return -ENODEV;
     }
 
     // Check if MP1 is working as we guarantee this support.
     if (ryzen_smu_get_version(MAILBOX_TYPE_MP1, 1) != 0) {
-        pr_err("Failed to obtain the SMU version");
+        pr_err("Failed to obtain the SMU version\n");
         return -EINVAL;
     }
 
@@ -364,7 +364,7 @@ static int ryzen_smu_probe(struct pci_dev *dev, const struct pci_device_id *id) 
         drv_attrs[MAX_ATTRS_LEN - 5] = &dev_attr_rsmu_cmd.attr;
 
     } else {
-        pr_info("RSMU Mailbox: Disabled or not responding to commands.");
+        pr_info("RSMU Mailbox: Disabled or not responding to commands\n");
         goto _CONTINUE_SETUP;
     }
 
@@ -374,22 +374,22 @@ static int ryzen_smu_probe(struct pci_dev *dev, const struct pci_device_id *id) 
         ret = smu_get_pm_table_version(g_driver.device, &g_driver.pm_table_version);
 
         if (ret != SMU_Return_OK && ret != SMU_Return_Unsupported) {
-            pr_err("Unable to resolve which PM table version the system uses -- disabling feature (%d)", ret);
+            pr_err("Unable to resolve which PM table version the system uses -- disabling feature (%d)\n", ret);
             goto _CONTINUE_SETUP;
         }
 
         g_driver.pm_table = kzalloc(PM_TABLE_MAX_SIZE, GFP_KERNEL);
         if (g_driver.pm_table == NULL) {
-            pr_err("Unable to allocate kernel buffer for PM table mapping -- disabling PM table feature");
+            pr_err("Unable to allocate kernel buffer for PM table mapping -- disabling PM table feature\n");
             goto _CONTINUE_SETUP;
         }
 
         // Perform an initial fill of the data for when the device is queued, saving time
-        pr_debug("Probing the PM table for state changes");
+        pr_debug("Probing the PM table for state changes\n");
 
         ret = smu_read_pm_table(dev, g_driver.pm_table, &g_driver.pm_table_read_size);
         if (ret == SMU_Return_OK) {
-            pr_debug("Probe succeeded: read %ld bytes", g_driver.pm_table_read_size);
+            pr_debug("Probe succeeded: read %ld bytes\n", g_driver.pm_table_read_size);
 
             drv_attrs[MAX_ATTRS_LEN - 4] = &dev_attr_pm_table_size.attr;
             drv_attrs[MAX_ATTRS_LEN - 3] = &dev_attr_pm_table.attr;
@@ -398,17 +398,17 @@ static int ryzen_smu_probe(struct pci_dev *dev, const struct pci_device_id *id) 
                 drv_attrs[MAX_ATTRS_LEN - 2] = &dev_attr_pm_table_version.attr;
 
         } else {
-            pr_err("Failed to probe the PM table -- disabling feature (%d)", ret);
+            pr_err("Failed to probe the PM table -- disabling feature (%d)\n", ret);
         }
     } else {
-        pr_debug("Notice: PM tables are not supported for the current platform (%d)", ret);
+        pr_debug("Notice: PM tables are not supported for the current platform (%d)\n", ret);
     }
 
 _CONTINUE_SETUP:
     // Allocate the sysfs attr group with the parameters for use
     g_driver.drv_kobj = kobject_create_and_add("ryzen_smu_drv", kernel_kobj);
     if (!g_driver.drv_kobj) {
-        pr_err("Unable to create sysfs interface");
+        pr_err("Unable to create sysfs interface\n");
         return -ENOMEM;
     }
 
@@ -459,7 +459,7 @@ static int __init ryzen_smu_driver_init(void) {
     // By default the driver will not be used to communicate with the
     //  northbridge so we forcefully tell the system to use it.
     if (pci_register_driver(&ryzen_smu_driver) < 0) {
-        pr_err("Failed to register the PCI driver.");
+        pr_err("Failed to register the PCI driver\n");
         return 1;
     }
 
