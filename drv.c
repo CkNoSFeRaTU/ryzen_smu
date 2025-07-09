@@ -41,7 +41,8 @@ MODULE_LICENSE("GPL");
 #define PCI_DEVICE_ID_AMD_MI200_ROOT        0x14bb
 #define PCI_DEVICE_ID_AMD_MI300_ROOT        0x14f8
 
-#define MAX_ATTRS_LEN                      13
+#define MAX_ATTRS_LEN                      12
+#define MAX_BIN_ATTRS_LEN                  2
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 19, 0)
 #error "Unsupported kernel version. Minimum: v4.19"
@@ -49,11 +50,15 @@ MODULE_LICENSE("GPL");
 
 #define __RO_ATTR(attr) \
     static struct kobj_attribute dev_attr_##attr = \
-        __ATTR(attr, S_IRUSR | S_IRGRP | S_IROTH, attr##_show, attr_store_null);
+        __ATTR(attr, S_IRUSR | S_IRGRP | S_IROTH, attr##_show, NULL);
 
 #define __RW_ATTR(attr) \
     static struct kobj_attribute dev_attr_##attr = \
         __ATTR(attr, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH, attr##_show, attr##_store);
+
+#define __RO_BIN_ATTR(attr) \
+    static struct bin_attribute dev_attr_##attr = \
+        __BIN_ATTR(attr, S_IRUSR | S_IRGRP | S_IROTH, attr##_read, NULL, PM_TABLE_MAX_SIZE);
 
 static struct ryzen_smu_data {
     struct pci_dev*         device;
@@ -86,10 +91,6 @@ static struct ryzen_smu_data {
 /* SMU Command Parameters. */
 uint smu_timeout_attempts = 8192;
 
-static ssize_t attr_store_null(struct kobject *kobj, struct kobj_attribute *attr, const char *buff, size_t count) {
-    return 0;
-}
-
 static ssize_t drv_version_show(struct kobject *kobj, struct kobj_attribute *attr, char *buff) {
     return sprintf(buff, "%s\n", THIS_MODULE->version);
 }
@@ -106,12 +107,22 @@ static ssize_t codename_show(struct kobject *kobj, struct kobj_attribute *attr, 
     return sprintf(buff, "%02d\n", smu_get_codename());
 }
 
-static ssize_t pm_table_show(struct kobject *kobj, struct kobj_attribute *attr, char *buff) {
+static ssize_t pm_table_read(struct file *file, struct kobject *kobj, struct bin_attribute *attr, char *buff, loff_t offset, size_t count) {
     if (smu_read_pm_table(g_driver.device, g_driver.pm_table, &g_driver.pm_table_read_size) != SMU_Return_OK)
         return 0;
 
-    memcpy(buff, g_driver.pm_table, g_driver.pm_table_read_size);
-    return g_driver.pm_table_read_size;
+    if (offset >= g_driver.pm_table_read_size)
+        return 0;
+
+    if (count > PAGE_SIZE)
+        count = PAGE_SIZE;
+
+    ssize_t len = g_driver.pm_table_read_size - offset;
+    if (count > len)
+        count = len;
+
+    memcpy(buff, g_driver.pm_table + offset, count);
+    return count;
 }
 
 static ssize_t pm_table_version_show(struct kobject *kobj, struct kobj_attribute *attr, char *buff) {
@@ -266,7 +277,7 @@ __RO_ATTR (version);
 __RO_ATTR (mp1_if_version);
 __RO_ATTR (codename);
 
-__RO_ATTR (pm_table);
+__RO_BIN_ATTR (pm_table);
 __RO_ATTR (pm_table_size);
 __RO_ATTR (pm_table_version);
 
@@ -297,6 +308,13 @@ static struct attribute *drv_attrs[MAX_ATTRS_LEN] = {
     // PM Table Optional Pointers
     NULL,
     NULL,
+
+    // Termination Pointer
+    NULL,
+};
+
+static struct bin_attribute *drv_bin_attrs[MAX_BIN_ATTRS_LEN] = {
+    // PM Table Optional Pointers
     NULL,
 
     // Termination Pointer
@@ -305,6 +323,7 @@ static struct attribute *drv_attrs[MAX_ATTRS_LEN] = {
 
 static struct attribute_group drv_attr_group = {
     .attrs = drv_attrs,
+    .bin_attrs = drv_bin_attrs,
 };
 
 static int ryzen_smu_get_version(const smu_mailbox mb, const int show) {
@@ -361,7 +380,7 @@ static int ryzen_smu_probe(struct pci_dev *dev, const struct pci_device_id *id) 
         //
         // This shouldn't *typically* cause errors unless the array structure is messed with.
         // So, we left a warning above to not touch it.
-        drv_attrs[MAX_ATTRS_LEN - 5] = &dev_attr_rsmu_cmd.attr;
+        drv_attrs[MAX_ATTRS_LEN - 4] = &dev_attr_rsmu_cmd.attr;
 
     } else {
         pr_info("RSMU Mailbox: Disabled or not responding to commands\n");
@@ -391,12 +410,11 @@ static int ryzen_smu_probe(struct pci_dev *dev, const struct pci_device_id *id) 
         if (ret == SMU_Return_OK) {
             pr_debug("Probe succeeded: read %ld bytes\n", g_driver.pm_table_read_size);
 
-            drv_attrs[MAX_ATTRS_LEN - 4] = &dev_attr_pm_table_size.attr;
-            drv_attrs[MAX_ATTRS_LEN - 3] = &dev_attr_pm_table.attr;
+            drv_attrs[MAX_ATTRS_LEN - 3] = &dev_attr_pm_table_size.attr;
+            drv_bin_attrs[MAX_BIN_ATTRS_LEN - 2] = &dev_attr_pm_table;
 
             if (g_driver.pm_table_version)
                 drv_attrs[MAX_ATTRS_LEN - 2] = &dev_attr_pm_table_version.attr;
-
         } else {
             pr_err("Failed to probe the PM table -- disabling feature (%d)\n", ret);
         }
