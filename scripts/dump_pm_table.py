@@ -87,6 +87,12 @@ def getCodeName():
         "Chagall",
         "Raphael",
         "Phoenix",
+        "Strix Point",
+        "Granite Ridge",
+        "Hawk Point",
+        "Storm Peak",
+        "Krackan Point",
+        "Strix Halo",
     ]
     args = read_file_str(CN_PATH, 2)
 

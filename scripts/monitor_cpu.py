@@ -114,8 +114,24 @@ def getCodeName():
         "Raven Ridge",
         "Raven Ridge 2",
         "Summit Ridge",
-        "Pinnacle Ridge"
-
+        "Pinnacle Ridge",
+        "Rembrandt",
+        "Vermeer",
+        "Vangogh",
+        "Cezanne",
+        "Milan",
+        "Dali",
+        "Lucienne",
+        "Naples",
+        "Chagall",
+        "Raphael",
+        "Phoenix",
+        "Strix Point",
+        "Granite Ridge",
+        "Hawk Point",
+        "Storm Peak",
+        "Krackan Point",
+        "Strix Halo",
     ]
     args = read_file_str(CN_PATH, 2)
 

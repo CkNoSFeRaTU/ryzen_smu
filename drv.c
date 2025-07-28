@@ -342,7 +342,7 @@ static int ryzen_smu_get_version(const smu_mailbox mb, const int show) {
         else
             sprintf(g_driver.smu_version, "%d.%d.%d", (ver >> 16) & 0xff, (ver >> 8) & 0xff, ver & 0xff);
 
-        pr_info("SMU v%s\n", g_driver.smu_version);
+        pr_info("SMU version: %s\n", g_driver.smu_version);
     }
 
     return 0;
@@ -413,8 +413,10 @@ static int ryzen_smu_probe(struct pci_dev *dev, const struct pci_device_id *id) 
             drv_attrs[MAX_ATTRS_LEN - 3] = &dev_attr_pm_table_size.attr;
             drv_bin_attrs[MAX_BIN_ATTRS_LEN - 2] = &dev_attr_pm_table;
 
-            if (g_driver.pm_table_version)
+            if (g_driver.pm_table_version) {
                 drv_attrs[MAX_ATTRS_LEN - 2] = &dev_attr_pm_table_version.attr;
+                pr_info("PM table version: 0x%08X\n", g_driver.pm_table_version);
+            }
         } else {
             pr_err("Failed to probe the PM table -- disabling feature (%d)\n", ret);
         }

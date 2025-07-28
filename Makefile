@@ -33,11 +33,11 @@ clean:
 	rm -rf *.o
 
 dkms-install:
-	mkdir -p $(DKMS_ROOT_PATH)
+	mkdir -p $(DKMS_ROOT_PATH)/lib
 	cp $(CURDIR)/dkms.conf $(DKMS_ROOT_PATH)
 	cp $(CURDIR)/Makefile $(DKMS_ROOT_PATH)
-	cp $(CURDIR)/*.c $(DKMS_ROOT_PATH)
-	cp $(CURDIR)/*.h $(DKMS_ROOT_PATH)
+	cp $(CURDIR)/*.[ch] $(DKMS_ROOT_PATH)
+	cp $(CURDIR)/lib/smu_common.[ch] $(DKMS_ROOT_PATH)/lib
 
 	sed -e "s/@CFLGS@/${MCFLAGS}/" \
 		-e "s/@VERSION@/$(VERSION)/" \

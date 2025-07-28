@@ -213,12 +213,13 @@ int smu_resolve_cpu_class(void) {
     const u32 cpuid = cpuid_eax(0x00000001);
     const u32 cpu_family = ((cpuid & 0xf00) >> 8) + ((cpuid & 0xff00000) >> 20);
     const u32 cpu_model = ((cpuid & 0xf0000) >> 12) + ((cpuid & 0xf0) >> 4);
+    const u32 cpu_stepping = cpuid & 0xf;
 
     // Combines "PkgType" and "Reserved"
     // See: CPUID_Fn80000001_EBX
     const u32 pkg_type = cpuid_ebx(0x80000001) >> 28;
 
-    pr_info("CPUID: family 0x%X, model 0x%X, package 0x%X\n", cpu_family, cpu_model, pkg_type);
+    pr_info("CPUID: family 0x%X, model 0x%X, stepping: 0x%X, package 0x%X\n", cpu_family, cpu_model, cpu_stepping, pkg_type);
 
     switch (cpu_family) {
         case 0x17: { // Zen, Zen+, Zen 2
