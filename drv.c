@@ -44,8 +44,8 @@ MODULE_LICENSE("GPL");
 #define MAX_ATTRS_LEN                      12
 #define MAX_BIN_ATTRS_LEN                  2
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 19, 0)
-#error "Unsupported kernel version. Minimum: v4.19"
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 5, 0)
+#error "Unsupported kernel version. Minimum: v4.5"
 #endif
 
 #define __RO_ATTR(attr) \
@@ -107,7 +107,13 @@ static ssize_t codename_show(struct kobject *kobj, struct kobj_attribute *attr, 
     return sprintf(buff, "%02d\n", smu_get_codename());
 }
 
-static ssize_t pm_table_read(struct file *file, struct kobject *kobj, struct bin_attribute *attr, char *buff, loff_t offset, size_t count) {
+static ssize_t pm_table_read(struct file *file, struct kobject *kobj,
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 17, 0)
+        const
+#endif
+        struct bin_attribute *attr, char *buff, loff_t offset, size_t count) {
+    size_t len;
+
     if (smu_read_pm_table(g_driver.device, g_driver.pm_table, &g_driver.pm_table_read_size) != SMU_Return_OK)
         return 0;
 
@@ -117,7 +123,7 @@ static ssize_t pm_table_read(struct file *file, struct kobject *kobj, struct bin
     if (count > PAGE_SIZE)
         count = PAGE_SIZE;
 
-    ssize_t len = g_driver.pm_table_read_size - offset;
+    len = g_driver.pm_table_read_size - offset;
     if (count > len)
         count = len;
 
@@ -313,7 +319,11 @@ static struct attribute *drv_attrs[MAX_ATTRS_LEN] = {
     NULL,
 };
 
-static struct bin_attribute *drv_bin_attrs[MAX_BIN_ATTRS_LEN] = {
+static
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 17, 0)
+        const
+#endif
+        struct bin_attribute *drv_bin_attrs[MAX_BIN_ATTRS_LEN] = {
     // PM Table Optional Pointers
     NULL,
 

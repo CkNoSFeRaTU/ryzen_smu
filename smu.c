@@ -72,9 +72,10 @@ static DEFINE_MUTEX(amd_pci_mutex);
 static DEFINE_MUTEX(amd_smu_mutex);
 
 int smu_smn_rw_address(const struct pci_dev* dev, const u32 address, u32* value, const int write) {
+    int err;
     mutex_lock(&amd_pci_mutex); // This may work differently for multi-NUMA systems.
 
-    int err = pci_write_config_dword(dev, SMU_PCI_ADDR_REG, address);
+    err = pci_write_config_dword(dev, SMU_PCI_ADDR_REG, address);
 
     if (err) {
         pr_warn("Error programming SMN address: 0x%x!\n", address);
@@ -99,14 +100,15 @@ smu_return_val smu_write_address(const struct pci_dev* dev, const u32 address, u
 }
 
 void smu_args_init(smu_req_args_t* args, const u32 value) {
+    u32 i;
     args->args[0] = value;
 
-    for (u32 i = 1; i < SMU_REQ_MAX_ARGS; ++i)
+    for (i = 1; i < SMU_REQ_MAX_ARGS; ++i)
         args->args[i] = 0;
 }
 
 smu_return_val smu_send_command(const struct pci_dev* dev, const u32 op, smu_req_args_t* args, const smu_mailbox mailbox) {
-    u32 retries, tmp, rsp_addr, args_addr, cmd_addr;
+    u32 i, retries, tmp, rsp_addr, args_addr, cmd_addr;
 
     // Pick the correct mailbox address.
     switch (mailbox) {
@@ -162,7 +164,7 @@ smu_return_val smu_send_command(const struct pci_dev* dev, const u32 op, smu_req
     smu_write_address(dev, rsp_addr, 0);
 
     // Step 3: Write the argument(s) into the argument register(s).
-    for (u32 i = 0; i < SMU_REQ_MAX_ARGS; ++i)
+    for (i = 0; i < SMU_REQ_MAX_ARGS; ++i)
         smu_write_address(dev, args_addr + (i * 4), args->args[i]);
 
     // Step 4: Write the message Id into the Message ID register.
@@ -193,7 +195,7 @@ smu_return_val smu_send_command(const struct pci_dev* dev, const u32 op, smu_req
     }
 
     // Step 7: If a return argument is expected, the Argument register may be read at this time.
-    for (u32 i = 0; i < SMU_REQ_MAX_ARGS; ++i) {
+    for (i = 0; i < SMU_REQ_MAX_ARGS; ++i) {
         if (smu_read_address(dev, args_addr + (i * 4), &args->args[i]) != SMU_Return_OK)
             pr_warn("Failed to fetch SMU ARG [%d]!\n", i);
     }
