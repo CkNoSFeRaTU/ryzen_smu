@@ -6,6 +6,7 @@
 #include <linux/delay.h>
 #include <linux/time.h>
 #include <asm/io.h>
+#include <asm/cpuid/api.h>
 
 #include "smu.h"
 
