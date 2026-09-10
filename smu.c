@@ -6,6 +6,10 @@
 #include <linux/delay.h>
 #include <linux/time.h>
 #include <asm/io.h>
+#include <linux/version.h>
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(7, 2, 0)
+#include <asm/cpuid/api.h>
+#endif
 
 #include "smu.h"
 
